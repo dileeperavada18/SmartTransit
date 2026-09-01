@@ -58,6 +58,12 @@ def create_app(config_class=Config):
             'version': '1.0.0'
         }), 200
 
+        @app.route("/")
+        def home():
+            return {
+                "message": "SmartTransit Backend Running"
+            }
+
     # Create tables
     with app.app_context():
         db.create_all()
