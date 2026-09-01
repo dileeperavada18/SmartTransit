@@ -1,7 +1,9 @@
 import os
+
 from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
+
 from config import Config
 from models import db
 
@@ -15,11 +17,15 @@ from routes.notifications import notifications_bp
 from routes.analytics import analytics_bp
 from routes.ml_routes import ml_bp
 
+
 def create_app(config_class=Config):
+
     app = Flask(__name__)
+
+    # Load configuration
     app.config.from_object(config_class)
 
-    # Enable CORS for all origins in development
+    # Enable CORS for API routes
     CORS(app, resources={r"/api/*": {"origins": "*"}})
 
     # Setup JWT
@@ -27,15 +33,21 @@ def create_app(config_class=Config):
 
     @jwt.unauthorized_loader
     def unauthorized_callback(callback):
-        return jsonify({'error': 'Missing or invalid authorization token'}), 401
+        return jsonify({
+            'error': 'Missing or invalid authorization token'
+        }), 401
 
     @jwt.invalid_token_loader
     def invalid_token_callback(callback):
-        return jsonify({'error': 'Signature verification failed'}), 401
+        return jsonify({
+            'error': 'Signature verification failed'
+        }), 401
 
     @jwt.expired_token_loader
     def expired_token_callback(jwt_header, jwt_payload):
-        return jsonify({'error': 'Token has expired'}), 401
+        return jsonify({
+            'error': 'Token has expired'
+        }), 401
 
     # Initialize Database
     db.init_app(app)
@@ -50,6 +62,7 @@ def create_app(config_class=Config):
     app.register_blueprint(analytics_bp)
     app.register_blueprint(ml_bp)
 
+    # Health check
     @app.route('/api/health', methods=['GET'])
     def health():
         return jsonify({
@@ -58,20 +71,35 @@ def create_app(config_class=Config):
             'version': '1.0.0'
         }), 200
 
-        @app.route("/")
-        def home():
-            return {
-                "message": "SmartTransit Backend Running"
-            }
+    # Root route
+    @app.route('/', methods=['GET'])
+    def home():
+        return jsonify({
+            'message': 'SmartTransit Backend Running'
+        }), 200
 
-    # Create tables
+    # Create database tables
     with app.app_context():
         db.create_all()
 
+    # TEMPORARY DEBUGGING
+    # Shows every registered Flask route in Render logs
+    print("========== REGISTERED ROUTES ==========")
+    print(app.url_map)
+    print("=======================================")
+
     return app
 
+
+# Create Flask application
 app = create_app()
+
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=True)
+
+    app.run(
+        host='0.0.0.0',
+        port=port,
+        debug=True
+    )
